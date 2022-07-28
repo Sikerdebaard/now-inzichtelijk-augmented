@@ -33,7 +33,7 @@ jobs:
     - name: run augmenter 
       run: |
         export PYTHONUNBUFFERED=1
-        python scraper/aug_now_inzichtelijk.py 
+        python scripts/aug_now_inzichtelijk.py 
     - name: Commit files
       run: |
           git config --local user.email "thomas@tphil.nl"
