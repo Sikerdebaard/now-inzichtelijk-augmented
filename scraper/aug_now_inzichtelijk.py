@@ -16,6 +16,14 @@ outdir = Path('data')
 outdir.mkdir(exist_ok=True)
 
 
+def cleanup():
+    for f in outdir.glob('*'):
+        if f.name == 'latest_commit_now_inzichtelijk':
+            continue
+        print(f'CLEANUP {f}')
+        f.unlink()
+
+
 def get_plaats(plaats):
     url = f'https://geodata.nationaalgeoregister.nl/locatieserver/v3/free?fq=type:woonplaats&fl=*&q={plaats}&rows=10&outputFormat=json'
     
@@ -30,7 +38,6 @@ def get_plaats(plaats):
     df_geo = gpd.GeoDataFrame(data['response']['docs'])
     
     return df_geo
-
 
 def checkout_now_inzichtelijk(tmpdir, branch='master'):
     repo_clone_url = "https://github.com/ansien/now-inzichtelijk.git"
@@ -140,20 +147,19 @@ def main():
 
     print('Checkout now inzichtelijk...')
     latest_commit = checkout_now_inzichtelijk(tmpdir)
-    print(f'Latest commit -{latest_commit}-')
+    print(f'Latest commit - {latest_commit} -')
 
 
     with open('data/latest_commit_now_inzichtelijk', 'r') as fh:
-        comp_latest_registered_commit = fh.read()
+        comp_latest_registered_commit = fh.read().strip()
 
-    print(f'Latest registered commit -{comp_latest_registered_commit}-')
+    print(f'Latest registered commit - {comp_latest_registered_commit} -')
     
     if comp_latest_registered_commit == latest_commit:
         print('No change, exiting.')
         return
 
-    with open('data/latest_commit_now_inzichtelijk', 'w') as fh:
-        fh.write(latest_commit)
+    cleanup()
 
     now_dfs = load_now_dfs(tmpdir)
     vestigingsplaatsen = get_vestigingsplaatsen(now_dfs)
@@ -170,6 +176,8 @@ def main():
         df_aug = augment_df_now(df_now, mappings, unmapped)
         df_aug.to_csv(outdir / f'augmented_{nowfile.name}', index=False)
 
+    with open('data/latest_commit_now_inzichtelijk', 'w') as fh:
+        fh.write(latest_commit)
 
 if __name__ == '__main__':
     main()
