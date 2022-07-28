@@ -1,0 +1,55 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: run model 
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '00 9 * * *'
+    - cron: '00 17 * * *'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ghostscript fonts-freefont-otf
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+    - name: run model update 
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        export PYTHONUNBUFFERED=1
+        python run.py
+    - name: Commit files
+      run: |
+          git config --local user.email "thomas@tphil.nl"
+          git config --local user.name "Thomas (Action)"
+          git add .
+          git commit -m "Automatic update"
+      continue-on-error: true
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+      continue-on-error: true
+
